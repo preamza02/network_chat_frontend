@@ -1,19 +1,16 @@
-import { useState } from "react";
+"use client"
+import { ChatProvider } from "./_context/ChatContext";
 
-// import Maginifying from "@/app/_static/Magnifying.png"
 
-import ChatPreviewInterface from "./_interface/chatPreviewInterface";
-import Chat from "./_component/home/chat";
-
-import HeaderChatComponent from "./_component/HeaderChatComponent";
-
-import { OnChangeSearch } from "./_utils/onChangeSearch";
+import Chat from "./_component/home/Chat";
 
 export default function Home() {
 
   return (
-    <main className="">
-      <Chat />
+    <main className="bg-[#FAF8ED]">
+      <ChatProvider>
+        <Chat />
+      </ChatProvider>
     </main>
   )
 }
