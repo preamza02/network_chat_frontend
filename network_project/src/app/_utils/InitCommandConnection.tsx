@@ -52,12 +52,22 @@ export const initCommandConnection = (
             recivedCommand = {
                 type: SPEACIAL_COMMAND_ENUNM.EXIT_USER,
                 nameProps: decomposeCommand[1],
-                idProps: decomposeCommand[0]
+                idProps: decomposeCommand[0],
             }
             // console.log(recivedCommand)
         } else if (commandString.includes(SPEACIAL_COMMAND_ENUNM.RENAME_GROUP)) {
 
         } else if (commandString.includes(SPEACIAL_COMMAND_ENUNM.CREATE_GROUP)) {
+            const decomposeCommand: string[] = commandString.replace(SPEACIAL_COMMAND_ENUNM.CREATE_GROUP, "").trim().split(" ")
+            // console.log(userId, decomposeCommand[2])
+            if (decomposeCommand[2] === userId || decomposeCommand[2] === "*") {
+                recivedCommand = {
+                    type: SPEACIAL_COMMAND_ENUNM.CREATE_GROUP,
+                    nameProps: decomposeCommand[1],
+                    idProps: decomposeCommand[0],
+                    otherProps: decomposeCommand[3]
+                }
+            }
 
         } else if (commandString.includes(SPEACIAL_COMMAND_ENUNM.DELETE_GROUP)) {
 
