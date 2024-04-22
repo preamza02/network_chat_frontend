@@ -5,13 +5,14 @@ import { useEffect, useState } from "react";
 
 import ChatPreviewInterface from "@/app/_interface/chatPreviewInterface";
 import MessageInterface from "@/app/_interface/messageInterface";
+import { SPEACIAL_COMMAND_ENUNM } from "@/app/_enum/speacial_command";
 
-import HeaderChatComponent from "@/app/_component/HeaderChatComponent";
 import ChatPreview from "../Chatpreview";
 
 import { OnChangeSearch } from "@/app/_utils/onChangeSearch";
 import filterChatSearchBar from "@/app/_utils/filterChatSearchBar";
 import { createMessageListBody } from "@/app/_utils/createMessageListBody";
+import { initCommandConnection } from "@/app/_utils/InitCommandConnection";
 
 const mockChatPreview1: ChatPreviewInterface = {
     name: "1",
@@ -39,21 +40,56 @@ const mockMessage2: MessageInterface = {
 export default function Chat() {
     const [myName, setMyName] = useState<string>("")
     const [isEnterApp, setIsEnterApp] = useState<boolean>(false)
+    const [commandWebsocket, setCommandWebsocket] = useState<WebSocket>()
+    const [lastestRecivedCommand, setLastestRevievedCommand] = useState<string>()
     const [isShowGroupChat, setIsShowGroupChat] = useState<boolean>(false)
     const [allUserChat, setAllUserChat] = useState<ChatPreviewInterface[]>([])
     const [allGroupChat, setAllGroupChat] = useState<ChatPreviewInterface[]>([])
     const [allSelectedChat, setAllSelectedChat] = useState<ChatPreviewInterface[]>([])
     const [shownChat, setShownChat] = useState<ChatPreviewInterface[]>([])
+    const [chatWebsocket, setChatWebsocket] = useState<WebSocket>()
+    const [lastestRecivedMessage, setLastestRevievedMessage] = useState<string>()
     const [searchText, setSearchText] = useState<string>("")
     const [selectedShownChat, setSelectedShownChat] = useState<ChatPreviewInterface>()
     const [shownMessages, setShownMessages] = useState<MessageInterface[]>([])
     const [currentMessage, setCurrentMessage] = useState<string>()
+
+    const myUserId: string = `USER_ID_${Math.floor(Math.random() * 100000)}`
+
     useEffect(() => {
         if (isEnterApp) {
-            setAllUserChat([mockChatPreview1, mockChatPreview2])
-            setAllGroupChat([mockChatPreview3])
+            initCommandConnection(myName, myUserId, setCommandWebsocket, setLastestRevievedCommand)
+            console.log(myUserId)
         }
     }, [isEnterApp])
+
+    useEffect(() => {
+        if (commandWebsocket !== undefined) {
+            setAllUserChat([mockChatPreview1, mockChatPreview2])
+            setAllGroupChat([mockChatPreview3])
+            console.log("command server init")
+        }
+    }, [commandWebsocket])
+
+    useEffect(() => {
+        if (lastestRecivedCommand !== undefined && lastestRecivedCommand !== "") {
+            const commandString: string = lastestRecivedCommand
+            setLastestRevievedCommand("")
+            if (commandString.includes(SPEACIAL_COMMAND_ENUNM.NEW_USER)) {
+
+            } else if (commandString.includes(SPEACIAL_COMMAND_ENUNM.RENAME_GROUP)) {
+
+            } else if (commandString.includes(SPEACIAL_COMMAND_ENUNM.CREATE_GROUP)) {
+
+            } else if (commandString.includes(SPEACIAL_COMMAND_ENUNM.DELETE_GROUP)) {
+
+            } else if (commandString.includes(SPEACIAL_COMMAND_ENUNM.RENAME_GROUP)) {
+
+            } else {
+
+            }
+        }
+    }, [lastestRecivedCommand])
 
     useEffect(() => {
         if (isShowGroupChat) {
@@ -93,16 +129,24 @@ export default function Chat() {
                                     }}
                                     onKeyDown={(event) => {
                                         if (event.key === 'Enter') {
-                                            setIsEnterApp(true)
+                                            if (myName !== "")
+                                                setIsEnterApp(true)
                                             return
                                         }
                                     }}
-                                /> : <p>{myName}</p>}
+                                /> :
+                                <div className="">
+                                    <p className="">{myName}</p>
+                                </div>}
                         </div>
                         <div>
-                            <div className={`${(isShowGroupChat) ? "bg-[#FF0000]" : "bg-[#00FF00]"} flex flex-grow h-[50px] items-center`} onClick={() => setIsShowGroupChat(!isShowGroupChat)}>
+
+                            {(isEnterApp) ? <div className={`${(isShowGroupChat) ? "bg-[#FF0000]" : "bg-[#00FF00]"} flex flex-grow h-[50px] items-center`} onClick={() => setIsShowGroupChat(!isShowGroupChat)}>
                                 <p className="m-auto select-none">{(isShowGroupChat) ? "GroupChat" : "ActiveUser"}</p>
-                            </div>
+                            </div> :
+                                <div className="items-center m-auto h-[50px] flex">
+                                    <p className="text-center m-auto">Click enter</p>
+                                </div>}
                         </div>
                     </div>
                     <div>
@@ -115,7 +159,7 @@ export default function Chat() {
                     <div className="space-y-[10px]">
                         {(shownChat !== undefined) ? (
                             <ul className="flex flex-col-reverse">
-                                {shownChat.map((ChatPreviewProps: ChatPreviewInterface) => <ChatPreview chatPreviewProps={ChatPreviewProps} setSelectedShownChat={setSelectedShownChat}></ChatPreview>)}
+                                {shownChat.map((ChatPreviewProps: ChatPreviewInterface) => <ChatPreview key={ChatPreviewProps.id} chatPreviewProps={ChatPreviewProps} setSelectedShownChat={setSelectedShownChat}></ChatPreview>)}
                             </ul>
                         ) : (<></>)
                         }
