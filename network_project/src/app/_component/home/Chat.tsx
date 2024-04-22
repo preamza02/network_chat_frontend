@@ -13,18 +13,19 @@ import { OnChangeSearch } from "@/app/_utils/onChangeSearch";
 import filterChatSearchBar from "@/app/_utils/filterChatSearchBar";
 import { createMessageListBody } from "@/app/_utils/createMessageListBody";
 import { initCommandConnection } from "@/app/_utils/InitCommandConnection";
+import { commandInterface } from "@/app/_interface/commandInterface";
 
 const mockChatPreview1: ChatPreviewInterface = {
     name: "1",
-    id: "",
+    id: "1",
 }
 const mockChatPreview2: ChatPreviewInterface = {
     name: "2",
-    id: "",
+    id: "2",
 }
 const mockChatPreview3: ChatPreviewInterface = {
     name: "3",
-    id: "",
+    id: "3",
 }
 
 const mockMessage1: MessageInterface = {
@@ -41,14 +42,14 @@ export default function Chat() {
     const [myName, setMyName] = useState<string>("")
     const [isEnterApp, setIsEnterApp] = useState<boolean>(false)
     const [commandWebsocket, setCommandWebsocket] = useState<WebSocket>()
-    const [lastestRecivedCommand, setLastestRevievedCommand] = useState<string>()
+    const [lastestRecivedCommand, setLastestRevievedCommand] = useState<commandInterface>()
     const [isShowGroupChat, setIsShowGroupChat] = useState<boolean>(false)
     const [allUserChat, setAllUserChat] = useState<ChatPreviewInterface[]>([])
     const [allGroupChat, setAllGroupChat] = useState<ChatPreviewInterface[]>([])
     const [allSelectedChat, setAllSelectedChat] = useState<ChatPreviewInterface[]>([])
     const [shownChat, setShownChat] = useState<ChatPreviewInterface[]>([])
     const [chatWebsocket, setChatWebsocket] = useState<WebSocket>()
-    const [lastestRecivedMessage, setLastestRevievedMessage] = useState<string>()
+    const [lastestRecivedMessage, setLastestRevievedMessage] = useState<MessageInterface>()
     const [searchText, setSearchText] = useState<string>("")
     const [selectedShownChat, setSelectedShownChat] = useState<ChatPreviewInterface>()
     const [shownMessages, setShownMessages] = useState<MessageInterface[]>([])
@@ -65,33 +66,45 @@ export default function Chat() {
 
     useEffect(() => {
         if (commandWebsocket !== undefined) {
-            setAllUserChat([mockChatPreview1, mockChatPreview2])
-            setAllGroupChat([mockChatPreview3])
             console.log("command server init")
         }
     }, [commandWebsocket])
 
     useEffect(() => {
-        if (lastestRecivedCommand !== undefined && lastestRecivedCommand !== "") {
-            const commandString: string = lastestRecivedCommand
-            setLastestRevievedCommand("")
-            if (commandString.includes(SPEACIAL_COMMAND_ENUNM.NEW_USER)) {
-
-            } else if (commandString.includes(SPEACIAL_COMMAND_ENUNM.RENAME_GROUP)) {
-
-            } else if (commandString.includes(SPEACIAL_COMMAND_ENUNM.CREATE_GROUP)) {
-
-            } else if (commandString.includes(SPEACIAL_COMMAND_ENUNM.DELETE_GROUP)) {
-
-            } else if (commandString.includes(SPEACIAL_COMMAND_ENUNM.RENAME_GROUP)) {
-
-            } else {
-
+        if (lastestRecivedCommand !== undefined) {
+            const commandType: SPEACIAL_COMMAND_ENUNM = lastestRecivedCommand.type
+            const tmpCommand: commandInterface = lastestRecivedCommand
+            setLastestRevievedCommand(undefined)
+            switch (commandType) {
+                case (SPEACIAL_COMMAND_ENUNM.CREATE_USER): {
+                    const newChatPreview: ChatPreviewInterface = {
+                        id: tmpCommand.idProps,
+                        name: tmpCommand.nameProps
+                    }
+                    // console.log()
+                    const newAllUserChat: ChatPreviewInterface[] = [...allUserChat, newChatPreview]
+                    setAllUserChat(newAllUserChat)
+                    break
+                }
+                case (SPEACIAL_COMMAND_ENUNM.EXIT_USER): {
+                    const newAllUserChat: ChatPreviewInterface[] = []
+                    let chatPreviewProps: ChatPreviewInterface
+                    for (chatPreviewProps of allUserChat) {
+                        console.log(chatPreviewProps.id, tmpCommand.idProps)
+                        if (chatPreviewProps.id !== tmpCommand.idProps) {
+                            newAllUserChat.push(chatPreviewProps)
+                        }
+                    }
+                    console.log(newAllUserChat.length)
+                    setAllUserChat(newAllUserChat)
+                    break
+                }
             }
         }
     }, [lastestRecivedCommand])
 
     useEffect(() => {
+        // console.log("change")
         if (isShowGroupChat) {
             setAllSelectedChat(allGroupChat)
         } else {
