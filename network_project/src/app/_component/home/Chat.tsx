@@ -14,6 +14,8 @@ import filterChatSearchBar from "@/app/_utils/filterChatSearchBar";
 import { createMessageListBody } from "@/app/_utils/createMessageListBody";
 import { initCommandConnection } from "@/app/_utils/InitCommandConnection";
 import { commandInterface } from "@/app/_interface/commandInterface";
+import { initMessageConnection } from "@/app/_utils/initMessageConnection";
+import { MESSAGE_ENUNM } from "@/app/_enum/speacial_message";
 
 const mockChatPreview1: ChatPreviewInterface = {
     name: "1",
@@ -58,7 +60,7 @@ export default function Chat() {
     const [selectedShownChatName, setSelectedShownChatName] = useState<string>()
     const [shownMessages, setShownMessages] = useState<MessageInterface[]>([])
     const [groupChatOwnerList, setGroupChatOwnerList] = useState<ChatPreviewInterface[]>([])
-    const [currentMessage, setCurrentMessage] = useState<string>()
+    const [currentMessage, setCurrentMessage] = useState<string>("")
 
     // const myUserId: string = `USER_ID_${Math.floor(Math.random() * 100000)}`
 
@@ -94,7 +96,7 @@ export default function Chat() {
                         if (groupChatOwnerList.length !== 0) {
                             let groupChatOwner: ChatPreviewInterface
                             for (groupChatOwner of groupChatOwnerList) {
-                                const commandString: string = `${SPEACIAL_COMMAND_ENUNM.CREATE_GROUP}${groupChatOwner.id} ${groupChatOwner.name} ${tmpCommand.idProps} ${myUserId}`
+                                const commandString: string = `${SPEACIAL_COMMAND_ENUNM.CREATE_GROUP}${groupChatOwner.id}!!!${groupChatOwner.name}!!!${tmpCommand.idProps}!!!${myUserId}`
                                 commandWebsocket?.send(JSON.stringify(commandString))
                                 // await sleep(100)
                             }
@@ -110,14 +112,25 @@ export default function Chat() {
                                 newAllUserChat.push(chatPreviewProps)
                             }
                         }
-                        // console.log(newAllUserChat.length)
                         setAllUserChat(newAllUserChat)
+                        const newAllGroupChat: ChatPreviewInterface[] = []
+                        for (chatPreviewProps of allGroupChat) {
+                            // console.log(chatPreviewProps.id, tmpCommand.idProps)
+                            if (chatPreviewProps.owner !== tmpCommand.idProps) {
+                                newAllGroupChat.push(chatPreviewProps)
+                            }
+                            if (chatPreviewProps.id === selectedShownChat?.id) {
+                                setSelectedShownChat(undefined)
+                            }
+                        }
+                        setAllGroupChat(newAllGroupChat)
                         break
                     }
                     case (SPEACIAL_COMMAND_ENUNM.CREATE_GROUP): {
                         const newChatPreview: ChatPreviewInterface = {
                             id: tmpCommand.idProps,
-                            name: tmpCommand.nameProps
+                            name: tmpCommand.nameProps,
+                            owner: tmpCommand.otherProps,
                         }
                         // console.log()
                         const newAllGroupChat: ChatPreviewInterface[] = [...allGroupChat, newChatPreview]
@@ -141,6 +154,32 @@ export default function Chat() {
                         }
                         // console.log(newAllGroupChat.length)
                         setAllGroupChat(newAllGroupChat)
+                        if (tmpCommand.idProps === selectedShownChat?.id) {
+                            setSelectedShownChat(undefined)
+                        }
+                        break
+                    }
+                    case (SPEACIAL_COMMAND_ENUNM.RENAME_GROUP): {
+                        const newAllGroupChat: ChatPreviewInterface[] = []
+                        let chatPreviewProps: ChatPreviewInterface
+                        for (chatPreviewProps of allGroupChat) {
+                            // console.log(chatPreviewProps.id, tmpCommand.idProps)
+                            if (chatPreviewProps.id == tmpCommand.idProps) {
+                                const renameGROUP = chatPreviewProps
+                                renameGROUP.name = tmpCommand.nameProps
+                                newAllGroupChat.push(renameGROUP)
+                                if (selectedShownChat?.id === tmpCommand.idProps) {
+                                    setSelectedShownChatName(tmpCommand.nameProps)
+                                }
+                            } else {
+                                newAllGroupChat.push(chatPreviewProps)
+                            }
+                        }
+                        // console.log(newAllGroupChat.length)
+                        setAllGroupChat(newAllGroupChat)
+                        if (tmpCommand.idProps === selectedShownChat?.id) {
+                            setSelectedShownChat(undefined)
+                        }
                         break
                     }
                 }
@@ -164,14 +203,27 @@ export default function Chat() {
 
     useEffect(() => {
         if (selectedShownChat !== undefined) {
-            setShownMessages([mockMessage1, mockMessage2])
+            setShownMessages([])
             setSelectedShownChatName(selectedShownChat.name)
+            const myTmpNumber: number = Number(myUserId.replace("USER_ID_", ""))
+            const otherTmpNumber: number = Number(selectedShownChat.id.replace("USER_ID_", ""))
+            const roomId: string = (isShowGroupChat) ? selectedShownChat.id : `ROOM_ID_${(myTmpNumber > otherTmpNumber) ? `${myTmpNumber}_${otherTmpNumber}` : `${otherTmpNumber}_${myTmpNumber}`}`
+            initMessageConnection(roomId, myName, myUserId, setChatWebsocket, setLastestRevievedMessage)
         }
     }, [selectedShownChat])
 
+    useEffect(() => {
+        if (lastestRecivedMessage === undefined) return
+        const tmpMessage: MessageInterface = lastestRecivedMessage
+        setLastestRevievedMessage(undefined)
+        const newShownMessages: MessageInterface[] = [...shownMessages, tmpMessage]
+        setShownMessages(newShownMessages)
+    }, [lastestRecivedMessage])
+
     const sendMessage = () => {
         if (currentMessage !== '') {
-            // conn.send(currentMessage)
+            const messageStringSend: string = `${MESSAGE_ENUNM.USER_SEND}${myUserId}!!!${myName}!!!${currentMessage}`
+            chatWebsocket?.send(JSON.stringify(messageStringSend))
             setCurrentMessage("")
         }
     }
@@ -212,7 +264,7 @@ export default function Chat() {
                                         <div className="mt-[10px] bg-[#FFFF00] flex flex-grow] h-[50px] items-center"
                                             onClick={() => {
                                                 const myGroupId: string = `GROUP_${Math.floor(Math.random() * 100000)}`
-                                                const commandString: string = `${SPEACIAL_COMMAND_ENUNM.CREATE_GROUP}${myGroupId} ${myGroupId} * ${myUserId}`
+                                                const commandString: string = `${SPEACIAL_COMMAND_ENUNM.CREATE_GROUP}${myGroupId}!!!${myGroupId}!!!*!!!${myUserId}`
                                                 // console.log(commandString)
                                                 console.log(myUserId)
                                                 commandWebsocket?.send(JSON.stringify(commandString))
@@ -249,20 +301,37 @@ export default function Chat() {
                         <>
                             <div className="bg-[#FFFFFF] w-[100%] h-[75px] m-auto items-center py-[12px] px-[20px] md:px-[0px]">
                                 <div className="flex m-auto flex-row space-x-[20px] items-center">
-                                    {(!isShowGroupChat && selectedShownChat.owner === myUserId) ?
-                                        <input className="m-auto h-[50px] bg-[#AAAAAA]" type="text" value={selectedShownChatName}
-                                            onChange={(event) => {
-                                                setSelectedShownChatName(event.target.value)
-                                            }
-                                            }
-                                            onKeyDown={(event) => {
-                                                if (event.key === 'Enter') {
-                                                    if (selectedShownChatName !== selectedShownChat.name)
-                                                        // setIsEnterApp(true)
-                                                        return
+                                    {(isShowGroupChat && selectedShownChat.owner === myUserId) ?
+                                        <div className="m-auto flex flex-row">
+                                            <input className="m-auto h-[50px] bg-[#AAAAAA]" type="text" value={selectedShownChatName}
+                                                onChange={(event) => {
+                                                    setSelectedShownChatName(event.target.value)
                                                 }
-                                            }}
-                                        /> : <h1 className="text-[24px] m-auto">{selectedShownChat.name}</h1>}
+                                                }
+                                                onKeyDown={(event) => {
+                                                    if (event.key === 'Enter') {
+                                                        if (selectedShownChatName !== selectedShownChat.name) {
+                                                            const commandString: string = `${SPEACIAL_COMMAND_ENUNM.RENAME_GROUP}${selectedShownChat.id}!!!${selectedShownChatName}`
+                                                            const message: string = `----<[Change room name from [${selectedShownChat.name}] -> [${selectedShownChatName}]>----`
+                                                            commandWebsocket?.send(JSON.stringify(commandString))
+                                                            const oldMessage: string = currentMessage
+                                                            setCurrentMessage(message)
+                                                            sendMessage()
+                                                            setCurrentMessage(oldMessage)
+                                                            // chatWebsocket?.send(JSON.stringify(message))
+                                                        }
+                                                        return
+                                                    }
+                                                }}
+                                            />
+                                            <div className="ml-[30px] +++++++++++++++++++++++++++++++++++++++++++++++items-center h-[50px] bg-[#FF00FF]"
+                                                onClick={() => {
+                                                    const commandString: string = `${SPEACIAL_COMMAND_ENUNM.DELETE_GROUP}${selectedShownChat.id}!!!${selectedShownChat.name}`
+                                                    commandWebsocket?.send(JSON.stringify(commandString))
+                                                }}>
+                                                <p className="m-auto select-none">Delete Group Chat</p>
+                                            </div>
+                                        </div> : <h1 className="text-[24px] m-auto">{selectedShownChatName}</h1>}
                                 </div>
                             </div>
                             <div className="h-[100px] bg-[#D9D9D9] flex-grow flex-col p-[10px] justify-items-end overflow-y-scroll ">

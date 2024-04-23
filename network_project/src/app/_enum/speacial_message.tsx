@@ -1,5 +1,3 @@
-export enum SPEACIAL_MESSAGE_ENUNM {
-    USER_ENTER = "<USER_ENTER>",
-    USER_EXIT = "<USER_EXIT>",
+export enum MESSAGE_ENUNM {
     USER_SEND = "<USER_SEND>"
 }

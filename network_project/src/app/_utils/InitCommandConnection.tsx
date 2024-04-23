@@ -31,11 +31,11 @@ export const initCommandConnection = (
                     nameProps: decomposeCommand[1],
                     idProps: decomposeCommand[0]
                 }
-                const sendCommand: string = `${SPEACIAL_COMMAND_ENUNM.CREATE_USER}${userId} ${userName} ${decomposeCommand[0]}`
+                const sendCommand: string = `${SPEACIAL_COMMAND_ENUNM.CREATE_USER}${userId}!!!${userName}!!!${decomposeCommand[0]}`
                 newCommandWebSocket.send(JSON.stringify(sendCommand))
             }
         } else if (commandString.includes(SPEACIAL_COMMAND_ENUNM.CREATE_USER)) {
-            const decomposeCommand: string[] = commandString.replace(SPEACIAL_COMMAND_ENUNM.CREATE_USER, "").trim().split(" ")
+            const decomposeCommand: string[] = commandString.replace(SPEACIAL_COMMAND_ENUNM.CREATE_USER, "").trim().split("!!!")
             // console.log(commandString.trim().replace("/&quot;/ig", '"');
             // const tmpRecivedCommand = JSON.parse(commandString.trim().replace("'", '"'))
             console.log(userId, decomposeCommand[2])
@@ -56,9 +56,15 @@ export const initCommandConnection = (
             }
             // console.log(recivedCommand)
         } else if (commandString.includes(SPEACIAL_COMMAND_ENUNM.RENAME_GROUP)) {
-
+            const decomposeCommand: string[] = commandString.replace(SPEACIAL_COMMAND_ENUNM.RENAME_GROUP, "").trim().split("!!!")
+            // console.log(userId, decomposeCommand[2])
+            recivedCommand = {
+                type: SPEACIAL_COMMAND_ENUNM.RENAME_GROUP,
+                nameProps: decomposeCommand[1],
+                idProps: decomposeCommand[0],
+            }
         } else if (commandString.includes(SPEACIAL_COMMAND_ENUNM.CREATE_GROUP)) {
-            const decomposeCommand: string[] = commandString.replace(SPEACIAL_COMMAND_ENUNM.CREATE_GROUP, "").trim().split(" ")
+            const decomposeCommand: string[] = commandString.replace(SPEACIAL_COMMAND_ENUNM.CREATE_GROUP, "").trim().split("!!!")
             // console.log(userId, decomposeCommand[2])
             if (decomposeCommand[2] === userId || decomposeCommand[2] === "*") {
                 recivedCommand = {
@@ -70,10 +76,12 @@ export const initCommandConnection = (
             }
 
         } else if (commandString.includes(SPEACIAL_COMMAND_ENUNM.DELETE_GROUP)) {
-
-        } else if (commandString.includes(SPEACIAL_COMMAND_ENUNM.RENAME_GROUP)) {
-
-        } else {
+            const decomposeCommand: string[] = commandString.replace(SPEACIAL_COMMAND_ENUNM.DELETE_GROUP, "").trim().split("!!!")
+            recivedCommand = {
+                type: SPEACIAL_COMMAND_ENUNM.DELETE_GROUP,
+                nameProps: decomposeCommand[1],
+                idProps: decomposeCommand[0],
+            }
 
         }
         if (recivedCommand !== undefined) {
